@@ -20,7 +20,8 @@ export interface FixedWindowLimiter {
 	reset(): void;
 }
 
-const MAX_TRACKED_KEYS = 10_000;
+/** Upper bound on tracked windows; exported so tests can assert the cap. */
+export const MAX_TRACKED_KEYS = 10_000;
 
 export function createFixedWindowLimiter(
 	limit: number,
@@ -32,7 +33,8 @@ export function createFixedWindowLimiter(
 		check(key, now = Date.now()) {
 			const current = windows.get(key);
 			if (!current || now - current.start >= windowMs) {
-				// Bound memory under key-spraying: drop the oldest entry.
+				// Bound memory under key-spraying: drop the oldest-inserted entry.
+				// Trade-off: an evicted key's window resets on its next check.
 				if (!current && windows.size >= MAX_TRACKED_KEYS) {
 					const oldest = windows.keys().next().value;
 					if (oldest !== undefined) windows.delete(oldest);
